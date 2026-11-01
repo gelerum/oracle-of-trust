@@ -1,0 +1,10 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+.env
+runtime
+contracts/out
+contracts/cache
+**/__pycache__
+**/*.egg-info

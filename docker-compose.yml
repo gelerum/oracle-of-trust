@@ -1,0 +1,182 @@
+x-app: &app
+  build: .
+  image: oracle-of-trust:local
+  environment: &environment
+    RPC_URL: http://anvil:8545
+    DATABASE_PASSWORD_FILE: /db-secrets/password
+    ORACLE_KEY_FILE: /oracle-secrets/oracle.key
+    SOURCE_KEYS_FILE: /source-secrets/source-keys.json
+    CENTRAL_BANK_KEY_FILE: /central-bank-secrets/central-bank.key
+    FACTOR_KEY_FILE: /factor-secrets/factor.key
+    BUYER_KEY_FILE: /buyer-secrets/buyer.key
+    ORACLE_EXTENSIONS: ${ORACLE_EXTENSIONS:-}
+    NETWORKS_CONFIG: ${NETWORKS_CONFIG:-}
+    SEED_DEMO: ${SEED_DEMO:-1}
+  volumes:
+    - runtime:/runtime:ro
+    - db-secrets:/db-secrets:ro
+
+services:
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:v1.4.4
+    entrypoint: ["anvil"]
+    command: ["--host", "0.0.0.0", "--chain-id", "31337", "--state", "/data/state.json", "--state-interval", "10"]
+    volumes:
+      - anvil-data:/data
+    healthcheck:
+      test: ["CMD", "cast", "block-number", "--rpc-url", "http://127.0.0.1:8545"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    stop_grace_period: 30s
+
+  bootstrap:
+    <<: *app
+    command: ["python", "scripts/bootstrap.py"]
+    volumes:
+      - runtime:/runtime
+      - db-secrets:/db-secrets
+      - oracle-secrets:/oracle-secrets
+      - source-secrets:/source-secrets
+      - factor-secrets:/factor-secrets
+      - central-bank-secrets:/central-bank-secrets
+      - buyer-secrets:/buyer-secrets
+
+  postgres:
+    image: postgres:16.9-alpine
+    environment:
+      POSTGRES_DB: oracle
+      POSTGRES_USER: oracle
+      POSTGRES_PASSWORD_FILE: /db-secrets/password
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - db-secrets:/db-secrets:ro
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oracle -d oracle"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  deploy:
+    <<: *app
+    command: ["python", "scripts/run.py", "python", "scripts/deploy.py"]
+    volumes:
+      - runtime:/runtime
+      - db-secrets:/db-secrets:ro
+      - factor-secrets:/factor-secrets:ro
+      - central-bank-secrets:/central-bank-secrets:ro
+      - buyer-secrets:/buyer-secrets:ro
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+
+  mocks:
+    <<: *app
+    volumes:
+      - runtime:/runtime:ro
+      - source-secrets:/source-secrets:ro
+    command: ["uvicorn", "oracle.mocks:app", "--host", "0.0.0.0", "--port", "8001"]
+    depends_on:
+      deploy:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  gateway:
+    <<: *app
+    environment:
+      <<: *environment
+      EDO_ADAPTER: ${EDO_ADAPTER:-default}
+    volumes:
+      - runtime:/runtime:ro
+      - db-secrets:/db-secrets:ro
+      - oracle-secrets:/oracle-secrets:ro
+      - source-files:/source-files:ro
+    ports:
+      - "${GATEWAY_BIND:-0.0.0.0}:${GATEWAY_PORT:-1821}:8000"
+    depends_on:
+      deploy:
+        condition: service_completed_successfully
+      mocks:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  demo:
+    <<: *app
+    profiles: ["tools"]
+    command: ["python", "scripts/demo.py"]
+    volumes:
+      - runtime:/runtime:ro
+      - factor-secrets:/factor-secrets:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  settle-demo:
+    <<: *app
+    profiles: ["tools"]
+    command: ["python", "scripts/settle_demo.py"]
+    volumes:
+      - runtime:/runtime:ro
+      - buyer-secrets:/buyer-secrets:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  backend-tests:
+    <<: *app
+    profiles: ["test"]
+    command: ["python", "scripts/run.py", "pytest", "-q"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  integration-tests:
+    <<: *app
+    profiles: ["test"]
+    environment:
+      <<: *environment
+      INTEGRATION_RPC_URL: http://anvil:8545
+      INTEGRATION_ARTIFACTS_DIR: /artifacts
+    command: ["python", "scripts/run.py", "pytest", "backend/tests/test_contract_consumers.py", "-q"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+
+  forge-tests:
+    image: ghcr.io/foundry-rs/foundry:v1.4.4
+    profiles: ["test"]
+    working_dir: /contracts
+    entrypoint: ["forge"]
+    command: ["test", "--out", "/tmp/out", "--cache-path", "/tmp/cache", "-vv"]
+    volumes:
+      - ./contracts:/contracts:ro,Z
+
+volumes:
+  anvil-data:
+  postgres-data:
+  runtime:
+  db-secrets:
+  oracle-secrets:
+  source-secrets:
+  factor-secrets:
+  central-bank-secrets:
+  buyer-secrets:
+  source-files:

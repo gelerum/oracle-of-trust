@@ -1,0 +1,61 @@
+{
+  "FACTORING": {
+    "DELIVERY_ACCEPTED": {
+      "sources": [
+        "mock-edo"
+      ],
+      "equals": true,
+      "attributes": {
+        "supplier": "supplier",
+        "buyer": "buyer",
+        "claimAmount": "claimAmount"
+      },
+      "required": {
+        "buyerAuthorized": true,
+        "acceptance": "signed"
+      }
+    },
+    "BUYER_NOTIFIED": {
+      "sources": [
+        "mock-edo"
+      ],
+      "equals": true,
+      "attributes": {
+        "buyer": "buyer",
+        "factor": "factor"
+      },
+      "required": {
+        "notificationStatus": "received"
+      }
+    },
+    "CLAIM_ASSIGNED": {
+      "sources": [
+        "mock-vtb"
+      ],
+      "equals": true,
+      "attributes": {
+        "supplier": "supplier",
+        "buyer": "buyer",
+        "factor": "factor",
+        "claimAmount": "claimAmount",
+        "claimId": "claimId"
+      },
+      "required": {}
+    },
+    "FINANCING_APPROVED": {
+      "sources": [
+        "mock-vtb"
+      ],
+      "equals": true,
+      "attributes": {
+        "financingAmount": "financingAmount",
+        "dueDate": "dueDate",
+        "factor": "factor",
+        "commissionAmount": "commissionAmount"
+      },
+      "required": {
+        "conditions": "unconditional"
+      }
+    }
+  }
+}

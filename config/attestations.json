@@ -1,0 +1,25 @@
+{
+  "FACTORING": {
+    "name": "VTB Oracle of Trust",
+    "version": "2",
+    "typeName": "Attestation",
+    "ttl": 120,
+    "fields": [
+      {"name": "dealId", "type": "bytes32"},
+      {"name": "documentHash", "type": "bytes32"},
+      {"name": "deliveryAccepted", "type": "bool"},
+      {"name": "claimAssigned", "type": "bool"},
+      {"name": "buyerNotified", "type": "bool"},
+      {"name": "financingApproved", "type": "bool"},
+      {"name": "issuedAt", "type": "uint256"},
+      {"name": "expiresAt", "type": "uint256"},
+      {"name": "nonce", "type": "uint256"}
+    ],
+    "facts": {
+      "deliveryAccepted": "DELIVERY_ACCEPTED",
+      "claimAssigned": "CLAIM_ASSIGNED",
+      "buyerNotified": "BUYER_NOTIFIED",
+      "financingApproved": "FINANCING_APPROVED"
+    }
+  }
+}

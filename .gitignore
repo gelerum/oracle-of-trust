@@ -1,0 +1,49 @@
+# Local environments and credentials
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+*.key
+*.pem
+runtime/
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.egg-info/
+build/
+dist/
+
+# JavaScript dependencies and reports
+node_modules/
+coverage/
+playwright-report/
+test-results/
+
+# Solidity build artifacts
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Local tools, editors and temporary files
+.agents/
+.codex/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*.swo
+*~

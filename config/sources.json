@@ -1,0 +1,36 @@
+[
+  {
+    "sourceId": "mock-edo",
+    "name": "ЭДО",
+    "type": "mock",
+    "adapter": "edo",
+    "factTypes": [
+      "DELIVERY_ACCEPTED",
+      "BUYER_NOTIFIED"
+    ],
+    "schemaVersion": "1",
+    "adapterVersion": "1",
+    "enabled": true,
+    "accessConditions": "mock-only; no legal consent implied",
+    "verification": "EIP-191 test signature",
+    "baseUrl": "http://mocks:8001/edo",
+    "healthUrl": "http://mocks:8001/edo/health"
+  },
+  {
+    "sourceId": "mock-vtb",
+    "name": "ВТБ Факторинг",
+    "type": "mock",
+    "adapter": "vtb",
+    "factTypes": [
+      "CLAIM_ASSIGNED",
+      "FINANCING_APPROVED"
+    ],
+    "schemaVersion": "1",
+    "adapterVersion": "1",
+    "enabled": true,
+    "accessConditions": "mock-only; no legal consent implied",
+    "verification": "EIP-191 test signature",
+    "baseUrl": "http://mocks:8001/vtb",
+    "healthUrl": "http://mocks:8001/vtb/health"
+  }
+]
